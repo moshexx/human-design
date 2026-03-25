@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - leads_data:/data        # persistent leads.csv
+      - ./backend:/app          # hot-reload source changes
+    environment:
+      - LEADS_FILE=/data/leads.csv
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev               # use the dev stage
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules       # preserve container node_modules
+    environment:
+      - VITE_API_PROXY=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  leads_data:
