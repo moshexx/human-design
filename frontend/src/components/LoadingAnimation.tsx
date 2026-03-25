@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const steps = [
-  'Locating your birth coordinates...',
-  'Calculating planetary positions...',
-  'Mapping your bodygraph...',
-  'Revealing your design...',
+  'מאתר את קואורדינטות הלידה שלך...',
+  'מחשב מיקומי כוכבי הלכת...',
+  'ממפה את ה-Bodygraph שלך...',
+  'חושף את העיצוב שלך...',
 ];
 
 export function LoadingAnimation() {
@@ -29,7 +29,7 @@ export function LoadingAnimation() {
         className="mb-12 text-sm font-semibold tracking-widest uppercase"
         style={{ color: 'rgba(139,92,246,0.8)' }}
       >
-        ✦ Human Design
+        ✦ עיצוב אנושי
       </motion.div>
 
       {/* Sacred geometry SVG */}
@@ -154,7 +154,7 @@ export function LoadingAnimation() {
           className="mt-6 text-xs text-center"
           style={{ color: 'rgba(156,163,175,0.5)' }}
         >
-          This usually takes just a moment
+          זה לוקח רק רגע
         </motion.p>
       </AnimatePresence>
     </div>

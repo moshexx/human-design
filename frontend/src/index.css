@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -22,9 +22,11 @@ html, body, #root {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Heebo', 'Manrope', sans-serif;
   color: var(--text);
   background-color: var(--bg);
+  direction: rtl;
+  text-align: right;
 }
 
 body {
@@ -43,7 +45,7 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Sora', sans-serif;
+  font-family: 'Heebo', 'Sora', sans-serif;
 }
 
 /* Gradient text */

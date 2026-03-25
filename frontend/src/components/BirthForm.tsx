@@ -4,11 +4,11 @@ import { z } from 'zod';
 import type { ChartRequest } from '../types/chart';
 
 const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use format YYYY-MM-DD'),
-  time: z.string().regex(/^\d{2}:\d{2}$/, 'Use format HH:MM'),
-  city: z.string().min(2, 'Please enter your birth city'),
+  name: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים'),
+  email: z.string().email('נא להזין כתובת אימייל תקינה'),
+  dob: z.string().check(z.regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'תאריך לא תקין — השתמש בפורמט YYYY-MM-DD')),
+  time: z.string().check(z.regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'שעה לא תקינה — השתמש בפורמט HH:MM')),
+  city: z.string().min(2, 'נא להזין את עיר הלידה'),
   goal: z.enum(['career', 'love', 'growth', 'all']).optional(),
   experience: z.enum(['beginner', 'heard', 'studying']).optional(),
 });
@@ -21,16 +21,16 @@ interface Props {
 }
 
 const goalOptions = [
-  { value: 'career', label: '💼 Career & Purpose' },
-  { value: 'love', label: '💞 Relationships' },
-  { value: 'growth', label: '🌱 Personal Growth' },
-  { value: 'all', label: '✨ All Areas' },
+  { value: 'career', label: '💼 קריירה ומטרה' },
+  { value: 'love', label: '💞 מערכות יחסים' },
+  { value: 'growth', label: '🌱 צמיחה אישית' },
+  { value: 'all', label: '✨ כל התחומים' },
 ] as const;
 
 const experienceOptions = [
-  { value: 'beginner', label: 'Total beginner' },
-  { value: 'heard', label: 'Heard of it' },
-  { value: 'studying', label: 'Studying it' },
+  { value: 'beginner', label: 'מתחיל לגמרי' },
+  { value: 'heard', label: 'שמעתי עליו' },
+  { value: 'studying', label: 'לומד את הנושא' },
 ] as const;
 
 export function BirthForm({ onSubmit, isLoading }: Props) {
@@ -47,20 +47,20 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
       <div className="text-center mb-10 max-w-xl">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-6"
           style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', color: '#c4b5fd' }}>
-          ✦ Free Reading
+          ✦ קריאה חינמית
         </div>
 
         <h1 className="gradient-text text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-4">
-          Discover Your<br />Human Design
+          גלה את<br />העיצוב האנושי שלך
         </h1>
 
         <p className="text-lg" style={{ color: '#9CA3AF' }}>
-          Unlock the cosmic blueprint you were born with
+          פתח את התוכנית הקוסמית שנולדת איתה
         </p>
 
         {/* Trust row */}
         <div className="flex items-center justify-center gap-6 mt-6">
-          {[['⚡', 'Instant'], ['🔒', 'Private'], ['✨', 'Free']].map(([icon, label]) => (
+          {[['⚡', 'מיידי'], ['🔒', 'פרטי'], ['✨', 'חינם']].map(([icon, label]) => (
             <div key={label} className="flex items-center gap-1.5 text-sm" style={{ color: '#9CA3AF' }}>
               <span>{icon}</span>
               <span>{label}</span>
@@ -72,27 +72,27 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
       {/* Glass Form Card */}
       <div className="glass-card w-full max-w-lg p-8">
         <p className="field-label text-center mb-8" style={{ fontSize: '13px', letterSpacing: '0.12em' }}>
-          Enter Your Birth Details
+          הזן את פרטי הלידה שלך
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Name */}
           <div>
-            <label className="field-label">Full Name</label>
+            <label className="field-label">שם מלא</label>
             <div className="input-wrapper">
               <span className="input-icon">
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
               </span>
-              <input className="cosmic-input" placeholder="Your full name" {...register('name')} />
+              <input className="cosmic-input" placeholder="השם המלא שלך" {...register('name')} />
             </div>
             {errors.name && <p className="field-error">{errors.name.message}</p>}
           </div>
 
           {/* Email */}
           <div>
-            <label className="field-label">Email Address</label>
+            <label className="field-label">כתובת אימייל</label>
             <div className="input-wrapper">
               <span className="input-icon">
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
           {/* Date + Time row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="field-label">Birth Date</label>
+              <label className="field-label">תאריך לידה</label>
               <div className="input-wrapper">
                 <span className="input-icon">
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
             </div>
 
             <div>
-              <label className="field-label">Birth Time</label>
+              <label className="field-label">שעת לידה</label>
               <div className="input-wrapper">
                 <span className="input-icon">
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -130,13 +130,13 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
                 <input className="cosmic-input" placeholder="HH:MM" {...register('time')} />
               </div>
               {errors.time && <p className="field-error">{errors.time.message}</p>}
-              <p className="field-helper">As precise as possible</p>
+              <p className="field-helper">כמה שיותר מדויק</p>
             </div>
           </div>
 
           {/* City */}
           <div>
-            <label className="field-label">Birth City</label>
+            <label className="field-label">עיר לידה</label>
             <div className="input-wrapper">
               <span className="input-icon">
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -144,15 +144,15 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
               </span>
-              <input className="cosmic-input" placeholder="e.g. Tel Aviv, New York" {...register('city')} />
+              <input className="cosmic-input" placeholder="למשל: תל אביב, ירושלים" {...register('city')} />
             </div>
             {errors.city && <p className="field-error">{errors.city.message}</p>}
-            <p className="field-helper">City where you were born</p>
+            <p className="field-helper">העיר בה נולדת</p>
           </div>
 
           {/* Goal - pill toggles */}
           <div>
-            <label className="field-label">What area of life seeks clarity?</label>
+            <label className="field-label">באיזה תחום חיים אתה מחפש בהירות?</label>
             <Controller
               name="goal"
               control={control}
@@ -175,7 +175,7 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
 
           {/* Experience - toggle group */}
           <div>
-            <label className="field-label">Your Human Design experience?</label>
+            <label className="field-label">מה הניסיון שלך עם עיצוב אנושי?</label>
             <Controller
               name="experience"
               control={control}
@@ -209,17 +209,17 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Calculating...
+                מחשב...
               </>
             ) : (
-              <>Reveal My Human Design →</>
+              <>גלה את העיצוב האנושי שלי ←</>
             )}
           </button>
         </form>
 
         {/* Footer */}
         <p className="text-center mt-6 text-xs" style={{ color: 'rgba(156,163,175,0.6)' }}>
-          🔒 100% private · No spam ever · Instant results
+          🔒 100% פרטי · אפס ספאם · תוצאות מיידיות
         </p>
       </div>
     </div>

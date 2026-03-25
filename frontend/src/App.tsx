@@ -29,7 +29,7 @@ export default function App() {
       setChart(result);
       setView('result');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.');
+      setError(err instanceof Error ? err.message : 'משהו השתבש. נסה שוב.');
       setView('form');
     }
   }
