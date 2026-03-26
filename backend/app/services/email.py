@@ -1,10 +1,14 @@
 """Send chart summary emails via Resend."""
+# flake8: noqa: E501  (long lines are unavoidable in HTML email templates)
 
+import base64
 import os
+
 import resend
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "Human Design <noreply@resend.dev>")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 TYPE_HE = {
     "Generator": "גנרטור",
@@ -22,8 +26,75 @@ STRATEGY_HE = {
     "Reflector": "המתן מחזור ירח",
 }
 
+PLANET_NAMES = {
+    "Sun": "Sun", "Earth": "Earth", "North Node": "North Node",
+    "South Node": "South Node", "Moon": "Moon", "Mercury": "Mercury",
+    "Venus": "Venus", "Mars": "Mars", "Jupiter": "Jupiter",
+    "Saturn": "Saturn", "Uranus": "Uranus", "Neptune": "Neptune",
+    "Pluto": "Pluto",
+}
 
-def _build_html(name: str, chart: dict) -> str:
+
+def _build_prompt(name: str, chart: dict) -> str:
+    hd_type = chart.get("type", "")
+    profile = chart.get("profile", "")
+    authority = chart.get("authority", "")
+    strategy = chart.get("strategy", "")
+    defined = ", ".join(chart.get("defined_centers", [])) or "None"
+    undefined = ", ".join(chart.get("undefined_centers", [])) or "None"
+    active_gates = ", ".join(str(g) for g in chart.get("active_gates", []))
+
+    channels = chart.get("active_channels", [])
+    channels_str = " | ".join(f"{g1}-{g2}" for g1, g2 in channels) or "None"
+
+    def format_planets(planets: list) -> str:
+        lines = []
+        for p in planets:
+            planet = p.get("planet", "")
+            gate = p.get("gate", "")
+            line = p.get("line", "")
+            lines.append(f"  {planet}: Gate {gate}, Line {line}")
+        return "\n".join(lines) if lines else "  (no data)"
+
+    personality_str = format_planets(chart.get("personality_planets", []))
+    design_str = format_planets(chart.get("design_planets", []))
+
+    return f"""You are a Human Design expert. Please provide a full, detailed reading in Hebrew for the following person.
+
+Name: {name}
+
+=== CHART DATA ===
+Type: {hd_type}
+Profile: {profile}
+Strategy: {strategy}
+Authority: {authority}
+
+Defined Centers: {defined}
+Undefined Centers: {undefined}
+
+Active Channels: {channels_str}
+Active Gates: {active_gates}
+
+Personality (Conscious) Planets:
+{personality_str}
+
+Design (Unconscious) Planets:
+{design_str}
+
+=== INSTRUCTIONS ===
+Please provide a comprehensive Human Design reading covering:
+1. Life purpose and general overview based on Type and Profile
+2. Decision-making guidance (Strategy and Authority in daily life)
+3. Strengths and gifts (defined centers and active channels)
+4. Areas of wisdom through openness (undefined centers)
+5. Life theme and what the Profile numbers mean for this person
+6. Practical advice for living in alignment with this design
+
+Respond entirely in Hebrew. Use professional Human Design terminology.
+Keep the reading warm, personal, and actionable."""
+
+
+def _build_html(name: str, chart: dict, prompt_url: str) -> str:
     hd_type = chart.get("type", "")
     type_he = TYPE_HE.get(hd_type, hd_type)
     profile = chart.get("profile", "")
@@ -105,14 +176,15 @@ def _build_html(name: str, chart: dict) -> str:
           <!-- CTA -->
           <tr>
             <td style="background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(236,72,153,0.1));border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:32px;text-align:center;">
-              <div style="color:rgba(139,92,246,0.8);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">✦ רוצה להעמיק?</div>
-              <h2 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F8F7FF;">קריאה מלאה ומותאמת אישית</h2>
+              <div style="color:rgba(139,92,246,0.8);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">✦ קריאה מלאה עם AI</div>
+              <h2 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F8F7FF;">קבל פרשנות מעמיקה ב-ChatGPT</h2>
               <p style="color:#9CA3AF;font-size:14px;margin:0 0 24px;line-height:1.6;">
-                ניתוח מעמיק של כל השערים שלך, צלב ההתגלמות, הפעלות כוכביות והנחיה אישית לחיים בהתאם לעיצוב שלך.
+                הכנו לך פרומפט מותאם אישית עם כל נתוני המפה שלך.<br>
+                פשוט לחץ, העתק והדבק ב-ChatGPT לקריאה מלאה בעברית.
               </p>
-              <a href="mailto:contact@yourdomain.com?subject=קריאה מלאה - {name}"
+              <a href="{prompt_url}"
                  style="display:inline-block;background:linear-gradient(135deg,#8B5CF6,#EC4899);color:#fff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:15px;font-weight:700;">
-                צור קשר לקריאה מלאה ←
+                לחץ כאן להעתיק פרומפט ✦
               </a>
             </td>
           </tr>
@@ -142,9 +214,13 @@ async def send_chart_email(to_email: str, name: str, chart: dict) -> None:
 
     resend.api_key = RESEND_API_KEY
 
+    prompt = _build_prompt(name, chart)
+    encoded = base64.urlsafe_b64encode(prompt.encode("utf-8")).decode("ascii")
+    prompt_url = f"{FRONTEND_URL}/?prompt={encoded}"
+
     resend.Emails.send({
         "from": EMAIL_FROM,
         "to": [to_email],
         "subject": f"העיצוב האנושי של {name} - הקריאה שלך מוכנה",
-        "html": _build_html(name, chart),
+        "html": _build_html(name, chart, prompt_url),
     })

@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BirthForm } from './components/BirthForm';
 import { LoadingAnimation } from './components/LoadingAnimation';
+import { PromptView } from './components/PromptView';
 import { ResultCard } from './components/ResultCard';
 import { generateChart } from './lib/api';
 import type { ChartRequest, ChartResponse } from './types/chart';
 
-type View = 'form' | 'loading' | 'result';
+type View = 'form' | 'loading' | 'result' | 'prompt';
 
 const fadeVariants = {
   initial: { opacity: 0, y: 16 },
@@ -19,6 +20,21 @@ export default function App() {
   const [chart, setChart] = useState<ChartResponse | null>(null);
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [promptText, setPromptText] = useState<string>('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('prompt');
+    if (encoded) {
+      try {
+        const decoded = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'));
+        setPromptText(decoded);
+        setView('prompt');
+      } catch {
+        // invalid encoding — stay on form
+      }
+    }
+  }, []);
 
   async function handleSubmit(data: ChartRequest) {
     setError(null);
@@ -67,6 +83,12 @@ export default function App() {
         {view === 'result' && chart && (
           <motion.div key="result" variants={fadeVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
             <ResultCard chart={chart} email={email} onReset={handleReset} />
+          </motion.div>
+        )}
+
+        {view === 'prompt' && (
+          <motion.div key="prompt" variants={fadeVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
+            <PromptView prompt={promptText} />
           </motion.div>
         )}
       </AnimatePresence>
