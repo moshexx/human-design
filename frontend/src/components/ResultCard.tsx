@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ChartResponse } from '../types/chart';
+import { sendChartEmail } from '../lib/api';
 import { BodyGraph } from './BodyGraph';
 
 interface Props {
   chart: ChartResponse;
+  email: string;
   onReset: () => void;
 }
 
@@ -51,7 +54,20 @@ function InfoCard({ label, value, icon }: { label: string; value: string; icon: 
   );
 }
 
-export function ResultCard({ chart, onReset }: Props) {
+export function ResultCard({ chart, email, onReset }: Props) {
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  async function handleRequestFullReading() {
+    if (emailStatus !== 'idle') return;
+    setEmailStatus('sending');
+    try {
+      await sendChartEmail(email, chart.name, chart);
+      setEmailStatus('sent');
+    } catch {
+      setEmailStatus('error');
+    }
+  }
+
   const typeColor = TYPE_COLORS[chart.type] ?? '#8B5CF6';
   const typeName = TYPE_NAMES[chart.type] ?? chart.type;
   const typeDesc = TYPE_DESCRIPTIONS[chart.type] ?? '';
@@ -202,8 +218,16 @@ export function ResultCard({ chart, onReset }: Props) {
           <p className="text-sm mb-6" style={{ color: '#9CA3AF' }}>
             ניתוח שערים מפורט, צלב התגלמות, הפעלות כוכביות והנחיה אישית
           </p>
-          <button className="btn-glow px-10 py-4 text-base">
-            קבל את הקריאה המלאה שלך ←
+          <button
+            className="btn-glow px-10 py-4 text-base"
+            onClick={handleRequestFullReading}
+            disabled={emailStatus === 'sending' || emailStatus === 'sent'}
+            style={{ opacity: emailStatus === 'sending' ? 0.7 : 1 }}
+          >
+            {emailStatus === 'sending' && 'שולח...'}
+            {emailStatus === 'sent' && '✓ המייל נשלח אליך!'}
+            {emailStatus === 'error' && '⚠ שגיאה — נסה שוב'}
+            {emailStatus === 'idle' && 'קבל את הקריאה המלאה שלך ←'}
           </button>
           <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(139,92,246,0.15)' }}>
             <button

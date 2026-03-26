@@ -17,10 +17,12 @@ const fadeVariants = {
 export default function App() {
   const [view, setView] = useState<View>('form');
   const [chart, setChart] = useState<ChartResponse | null>(null);
+  const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(data: ChartRequest) {
     setError(null);
+    setEmail(data.email);
     setView('loading');
     try {
       const result = await generateChart(data);
@@ -36,6 +38,7 @@ export default function App() {
 
   function handleReset() {
     setChart(null);
+    setEmail('');
     setError(null);
     setView('form');
   }
@@ -63,7 +66,7 @@ export default function App() {
 
         {view === 'result' && chart && (
           <motion.div key="result" variants={fadeVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
-            <ResultCard chart={chart} onReset={handleReset} />
+            <ResultCard chart={chart} email={email} onReset={handleReset} />
           </motion.div>
         )}
       </AnimatePresence>

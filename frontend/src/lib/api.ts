@@ -13,3 +13,7 @@ export async function generateChart(data: ChartRequest): Promise<ChartResponse> 
     throw new Error('An unexpected error occurred.');
   }
 }
+
+export async function sendChartEmail(email: string, name: string, chart: ChartResponse): Promise<void> {
+  await axios.post('/api/v1/send-chart-email', { email, name, chart });
+}

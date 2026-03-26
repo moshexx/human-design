@@ -8,6 +8,8 @@ services:
     volumes:
       - leads_data:/data        # persistent leads.csv
       - ./backend:/app          # hot-reload source changes
+    env_file:
+      - .env
     environment:
       - LEADS_FILE=/data/leads.csv
       - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000

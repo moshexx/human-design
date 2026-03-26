@@ -3,3 +3,4 @@ uvicorn[standard]
 pyswisseph
 httpx
 pydantic[email]
+resend
