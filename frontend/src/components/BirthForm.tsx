@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,14 +7,20 @@ import type { ChartRequest } from '../types/chart';
 const schema = z.object({
   name: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים'),
   email: z.string().email('נא להזין כתובת אימייל תקינה'),
-  dob: z.string().check(z.regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'תאריך לא תקין — השתמש בפורמט YYYY-MM-DD')),
-  time: z.string().check(z.regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'שעה לא תקינה — השתמש בפורמט HH:MM')),
-  city: z.string().min(2, 'נא להזין את עיר הלידה'),
+  dob: z.string().refine((v) => /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v), 'תאריך לא תקין'),
+  time: z.string().refine((v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v), 'שעה לא תקינה'),
+  city: z.string().min(2, 'נא לבחור עיר מהרשימה'),
   goal: z.enum(['career', 'love', 'growth', 'all']).optional(),
   experience: z.enum(['beginner', 'heard', 'studying']).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+interface NominatimResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
 
 interface Props {
   onSubmit: (data: ChartRequest) => void;
@@ -32,6 +39,131 @@ const experienceOptions = [
   { value: 'heard', label: 'שמעתי עליו' },
   { value: 'studying', label: 'לומד את הנושא' },
 ] as const;
+
+function CityAutocomplete({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  error?: string;
+}) {
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const q = e.target.value;
+    onChange(q);
+    setSuggestions([]);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.length < 2) { setOpen(false); return; }
+
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`,
+          { headers: { 'Accept-Language': 'he,en', 'User-Agent': 'HumanDesignApp/1.0' } }
+        );
+        const data: NominatimResult[] = await res.json();
+        setSuggestions(data);
+        setOpen(data.length > 0);
+      } catch { /* silent */ } finally {
+        setLoading(false);
+      }
+    }, 350);
+  }
+
+  function select(item: NominatimResult) {
+    onChange(item.display_name);
+    setSuggestions([]);
+    setOpen(false);
+  }
+
+  function handleBlur(e: React.FocusEvent) {
+    // close only if focus leaves the whole wrapper
+    if (!wrapperRef.current?.contains(e.relatedTarget as Node)) {
+      setTimeout(() => setOpen(false), 150);
+    }
+  }
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
+      <div className="input-wrapper">
+        <span className="input-icon">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+        </span>
+        <input
+          className="cosmic-input"
+          placeholder="התחל להקליד עיר..."
+          value={value}
+          onChange={handleInput}
+          onBlur={handleBlur}
+          autoComplete="off"
+        />
+        {loading && (
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
+            <svg className="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#8B5CF6" strokeWidth="4" />
+              <path className="opacity-75" fill="#8B5CF6" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </span>
+        )}
+      </div>
+      {open && suggestions.length > 0 && (
+        <ul
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            left: 0,
+            zIndex: 50,
+            marginTop: 4,
+            borderRadius: 12,
+            overflow: 'hidden',
+            background: 'rgba(20,17,40,0.97)',
+            border: '1px solid rgba(139,92,246,0.35)',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+          }}
+        >
+          {suggestions.map((item, i) => (
+            <li
+              key={i}
+              onMouseDown={() => select(item)}
+              style={{
+                padding: '10px 14px',
+                cursor: 'pointer',
+                fontSize: 13,
+                color: '#c4b5fd',
+                borderBottom: i < suggestions.length - 1 ? '1px solid rgba(139,92,246,0.1)' : 'none',
+                textAlign: 'right',
+                lineHeight: 1.4,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.12)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {item.display_name}
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p className="field-error">{error}</p>}
+      <p className="field-helper">בחר מהרשימה לתוצאה מדויקת</p>
+    </div>
+  );
+}
 
 export function BirthForm({ onSubmit, isLoading }: Props) {
   const {
@@ -114,7 +246,7 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                   </svg>
                 </span>
-                <input className="cosmic-input" placeholder="YYYY-MM-DD" {...register('dob')} />
+                <input className="cosmic-input" type="date" {...register('dob')} />
               </div>
               {errors.dob && <p className="field-error">{errors.dob.message}</p>}
             </div>
@@ -127,27 +259,28 @@ export function BirthForm({ onSubmit, isLoading }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </span>
-                <input className="cosmic-input" placeholder="HH:MM" {...register('time')} />
+                <input className="cosmic-input" type="time" {...register('time')} />
               </div>
               {errors.time && <p className="field-error">{errors.time.message}</p>}
               <p className="field-helper">כמה שיותר מדויק</p>
             </div>
           </div>
 
-          {/* City */}
+          {/* City autocomplete */}
           <div>
             <label className="field-label">עיר לידה</label>
-            <div className="input-wrapper">
-              <span className="input-icon">
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
-              </span>
-              <input className="cosmic-input" placeholder="למשל: תל אביב, ירושלים" {...register('city')} />
-            </div>
-            {errors.city && <p className="field-error">{errors.city.message}</p>}
-            <p className="field-helper">העיר בה נולדת</p>
+            <Controller
+              name="city"
+              control={control}
+              defaultValue=""
+              render={({ field }) => (
+                <CityAutocomplete
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.city?.message}
+                />
+              )}
+            />
           </div>
 
           {/* Goal - pill toggles */}
