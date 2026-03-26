@@ -1,4 +1,4 @@
-# Frontend TODO — Human Design Lead Magnet
+# Frontend TODO - Human Design Lead Magnet
 
 ## Phase 2: Frontend (React + Vite + TypeScript)
 

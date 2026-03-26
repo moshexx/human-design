@@ -145,6 +145,6 @@ async def send_chart_email(to_email: str, name: str, chart: dict) -> None:
     resend.Emails.send({
         "from": EMAIL_FROM,
         "to": [to_email],
-        "subject": f"העיצוב האנושי של {name} — הקריאה שלך מוכנה",
+        "subject": f"העיצוב האנושי של {name} - הקריאה שלך מוכנה",
         "html": _build_html(name, chart),
     })

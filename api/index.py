@@ -1,4 +1,4 @@
-"""Vercel serverless entry point — wraps the FastAPI app."""
+"""Vercel serverless entry point - wraps the FastAPI app."""
 import sys
 import os
 

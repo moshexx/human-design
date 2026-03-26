@@ -226,7 +226,7 @@ export function ResultCard({ chart, email, onReset }: Props) {
           >
             {emailStatus === 'sending' && 'שולח...'}
             {emailStatus === 'sent' && '✓ המייל נשלח אליך!'}
-            {emailStatus === 'error' && '⚠ שגיאה — נסה שוב'}
+            {emailStatus === 'error' && '⚠ שגיאה - נסה שוב'}
             {emailStatus === 'idle' && 'קבל את הקריאה המלאה שלך ←'}
           </button>
           <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(139,92,246,0.15)' }}>
